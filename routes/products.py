@@ -3,10 +3,9 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from config.db import conn, SessionLocal, get_db
+from config.db import  SessionLocal, get_db
 from passlib.context import CryptContext
 from models.db_p import Vehiculos, Users, Model_Auto, Category
-from models import db_p
 from sqlalchemy.orm import Session
 from modelo.m_pro import vh
 from modelo.m_user import Token, Users, Login

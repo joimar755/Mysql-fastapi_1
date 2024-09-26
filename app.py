@@ -1,13 +1,24 @@
 from fastapi import FastAPI  
 from routes.products import VH
-from models import db_p
-from config.db import engine, get_db, SessionLocal
+from alembic import command
+from alembic.config import Config
+#from models import db_p
+from config.db import engine, Base, SessionLocal
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI() 
 
-db_p.Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine, checkfirst=True)
 
+alembic_cfg = Config("alembic.ini")
+command.ensure_version(alembic_cfg)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 
