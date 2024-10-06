@@ -10,8 +10,8 @@ app = FastAPI()
 
 Base.metadata.create_all(bind=engine, checkfirst=True)
 
-alembic_cfg = Config("alembic.ini")
-command.ensure_version(alembic_cfg)
+#alembic_cfg = Config("alembic.ini")
+#command.ensure_version(alembic_cfg)
 
 def get_db():
     db = SessionLocal()

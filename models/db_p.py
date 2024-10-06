@@ -2,17 +2,19 @@ from sqlalchemy import TIMESTAMP, Integer, String, Table, Column, text, true, Fo
 from sqlalchemy.orm import relationship
 from config.db import Base
 
+
 class Vehiculos(Base):
     __tablename__ = "vehiculos"
     id = Column(Integer, primary_key=True)
     name_product = Column(String(255), nullable=False)
-    placas = Column(String(255), nullable=False)
+    placa = Column(String(255), nullable=False)
     color = Column(String(300), nullable=False)
     price = Column(Integer, nullable=False)
     stock = Column(Integer, nullable=False)
     status_id = Column(Integer, ForeignKey("status.id", ondelete="CASCADE"), nullable=False)
     category_id = Column(Integer, ForeignKey("categorys.id", ondelete="CASCADE"), nullable=False)
     modelo_id = Column(Integer, ForeignKey("Autos_models.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     
     
@@ -78,7 +80,7 @@ class Users(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
     username = Column(String(255), nullable=False, unique=True)
-    passwords = Column(String(255), nullable=False)
+    password = Column(String(255), nullable=False)
     phone_number = Column(String(12))
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     rol_id = Column(Integer, ForeignKey("rol.id", ondelete="CASCADE"), nullable=False)

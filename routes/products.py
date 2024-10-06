@@ -3,12 +3,16 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from config.db import  SessionLocal, get_db
 from passlib.context import CryptContext
+from modelo import oauth
+from modelo.oauth import get_current_user
 from models.db_p import Vehiculos, Users, Model_Auto, Category
 from sqlalchemy.orm import Session
-from modelo.m_pro import vh
-from modelo.m_user import Token, Users, Login
+from models import db_p
+from modelo import m_pro
+from modelo.m_user import Login, Token, users
 from modelo.token import create_access_token
 import json
 
@@ -18,7 +22,7 @@ VH = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-@VH.get("/products", response_model=List[vh])
+@VH.get("/products", response_model=List[m_pro.vh])
 def getproduct(db: Session = Depends(get_db)):
     product = db.query(Vehiculos).all()
     return product
@@ -26,18 +30,20 @@ def getproduct(db: Session = Depends(get_db)):
 
 @VH.post("/products")
 def getnew(
-    vhs: vh,
-    db: Session = Depends(get_db),
+    vhs: m_pro.vhcreate,
+    db: Session = Depends(get_db), current_user: int = Depends(oauth.get_current_user)
 ):
-    existe = db.query(Vehiculos).filter(Vehiculos.name == vhs.name).first()
+
+    existe = db.query(Vehiculos).filter(Vehiculos.name_product == vhs.name_product).first()
     if existe is None:
-        db_item = Vehiculos(**vhs.model_dump())
+        print(current_user.id)     
+        db_item = Vehiculos(user_id=current_user.id,**vhs.model_dump())
         db.add(db_item)
         db.commit()
         db.refresh(db_item)
     else:
         raise HTTPException(
-            status_code=404, detail="product with this name already exists "
+            status_code=404, detail="product with this name already exists"
         )
 
     return {"data": db_item}
@@ -51,7 +57,7 @@ def index(id: int, db: Session = Depends(get_db)):
     return vh
 
 
-@VH.get("/relacion", response_model=List[vh])
+@VH.get("/relacion", response_model=List[m_pro.vh])
 def index(db: Session = Depends(get_db)):
     query = (
         db.query(Vehiculos, Category, Model_Auto)
@@ -76,22 +82,29 @@ def index(db: Session = Depends(get_db)):
 
 
 @VH.delete("/products/{id}")
-def delete(id: int, db: Session = Depends(get_db)):
-    vh = db.query(Vehiculos).filter(Vehiculos.id == id)
-    if vh.first() == None:
+def delete(id: int, db: Session = Depends(get_db),current_user: int = Depends(oauth.get_current_user)):
+    vh_query = db.query(Vehiculos).filter(Vehiculos.id == id)
+    vh = vh_query.first()
+    if vh == None:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    vh.delete()
+    if vh.user_id != current_user.id:
+        raise HTTPException(status_code=401, detail="Unauthorized to delete this product") 
+
+    vh.delete(synchronize_session=False)
     db.commit()
     raise HTTPException(status_code=200, detail="Product delete")
 
 
-@VH.put("/products/{id}", response_model=vh)
-def index(id: int, update_vhs: vh, db: Session = Depends(get_db)):
+@VH.put("/products/{id}", response_model=m_pro.vhBase)
+def index(id: int, update_vhs: m_pro.vhBase ,current_user: int = Depends(get_current_user), db: Session = Depends(get_db)):
     vh_query = db.query(Vehiculos).filter(Vehiculos.id == id)
     post_vh = vh_query.first()
     if not vh_query.first():
         raise HTTPException(status_code=404, detail="Product not found")
+    
+    if post_vh.user_id != current_user.id:
+        raise HTTPException(status_code=401, detail="Unauthorized to update this product") 
 
     vh_query.update(update_vhs.model_dump(), synchronize_session=False)
     db.commit()
@@ -99,34 +112,35 @@ def index(id: int, update_vhs: vh, db: Session = Depends(get_db)):
     return post_vh
 
 
-@VH.post("/usuario", response_model=Users)
-def get_user(users: Users):
-    existe = conn.execute(
-        user.select().where(user.c.username == users.username)
-    ).first()
+@VH.post("/usuario")
+def get_user(user: users,db: Session = Depends(get_db)):
+    existe = db.query(Users).filter(Users.username == user.username).first()
     if existe:
         return JSONResponse("usuario ya se encuentra en uso")
+    if existe is None:
+            hashed_password = pwd_context.hash(user.password)
+            user.password = hashed_password
+            db_item = Users(**user.model_dump())
+            db.add(db_item)
+            db.commit()
+            db.refresh(db_item)
+    else:
+        raise HTTPException(
+            status_code=404, detail="product with this name already exists "
+         )
+    #vh_query = db.query(Users).filter(Users.id == db_item.id).first()
+    return  db_item
 
-    new_users = {"username": users.username}
-    new_users["password"] = pwd_context.hash(users.password.encode("utf-8"))
-    result = conn.execute(user.insert().values(new_users))
-    query = conn.execute(user.select().where(user.c.id == result.lastrowid)).first()
-    conn.commit()
-    return query
 
+@VH.post("/usuario/login",response_model=Login)
+def get_user(user_credentials:OAuth2PasswordRequestForm=Depends(),db: Session = Depends(get_db)):
+    user = db.query(Users).filter(Users.username == user_credentials.username).first()
 
-@VH.post("/usuario/login", response_model=Login)
-def get_user(users: Login):
-
-    user_db = conn.execute(
-        user.select().where(user.c.username == users.username)
-    ).first()
-
-    if not user_db or not pwd_context.verify(users.password, user_db.password):
+    if not user or not pwd_context.verify(user_credentials.password, user.password):
         return JSONResponse("Incorrect username or password")
         raise HTTPException(409, "Incorrect username or password")
 
-    access_token = create_access_token(data={"sub": users.username})
+    access_token =  create_access_token(data={"user_id": user.id})
     token = {"access_token": access_token, "token_type": "bearer"}
     return JSONResponse(token)
 

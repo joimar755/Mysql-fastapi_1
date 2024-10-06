@@ -2,13 +2,18 @@ from typing import Optional, Union
 from fastapi import Form
 from pydantic import BaseModel
 
-class Users(BaseModel):
+class users(BaseModel):
     username:  str | None = None
     password:  str | None = None
+    phone_number: Optional[int]
+    rol_id: Optional[int]
+    
+    class Config:
+        from_attributes = True
 
 class Login(BaseModel):
-    username:  str = Form()
-    password:  str = Form()
+    username:  str 
+    password:  str 
     
 class Token(BaseModel):
     access_token: str
@@ -16,7 +21,8 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    username: Union[str, None] = None
+    id: Optional[int] = None
+    #username: Union[str, None] = None
    
 
     
