@@ -25,7 +25,7 @@ def get_db():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        'http://localhost:3000'
+        'http://localhost:5173'
     ],  # En producción, especifica los dominios permitidos en lugar de "*"
     allow_credentials=True,
     allow_methods=["*"],

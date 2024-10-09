@@ -95,6 +95,16 @@ def delete(id: int, db: Session = Depends(get_db),current_user: int = Depends(oa
     db.commit()
     raise HTTPException(status_code=200, detail="Product delete")
 
+@VH.get("/profile/{id}")
+def index(id: int, db: Session = Depends(get_db),current_user: int = Depends(oauth.get_current_user)):
+    vh_query = db.query(Users).filter(Users.id == id)
+    vh = vh_query.first()
+    if vh == None:
+        raise HTTPException(status_code=404, detail="user not found")
+    if vh.id != current_user.id:
+        raise HTTPException(status_code=401, detail="Unauthorized to users") 
+    
+    return {"user":vh}
 
 @VH.put("/products/{id}", response_model=m_pro.vhBase)
 def index(id: int, update_vhs: m_pro.vhBase ,current_user: int = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -132,7 +142,7 @@ def get_user(user: users,db: Session = Depends(get_db)):
     return  db_item
 
 
-@VH.post("/usuario/login",response_model=Login)
+@VH.post("/usuario/login")
 def get_user(user_credentials:OAuth2PasswordRequestForm=Depends(),db: Session = Depends(get_db)):
     user = db.query(Users).filter(Users.username == user_credentials.username).first()
 
@@ -141,8 +151,9 @@ def get_user(user_credentials:OAuth2PasswordRequestForm=Depends(),db: Session = 
         raise HTTPException(409, "Incorrect username or password")
 
     access_token =  create_access_token(data={"user_id": user.id})
-    token = {"access_token": access_token, "token_type": "bearer"}
+    token = {"access_token": access_token, "username":user.username, "userID":user.id, "token_type": "bearer"}
     return JSONResponse(token)
+
 
 
 # raise HTTPException(status_code=200, detail="login")
