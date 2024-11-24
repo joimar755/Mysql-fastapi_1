@@ -8,7 +8,7 @@ from config.db import  SessionLocal, get_db
 from passlib.context import CryptContext
 from modelo import oauth
 from modelo.oauth import get_current_user
-from models.db_p import Vehiculos, Users, Model_Auto, Category
+from models.db_p import Vehiculos, Users, Model_Auto, Category, status
 from sqlalchemy.orm import Session
 from models import db_p
 from modelo import m_pro
@@ -26,6 +26,22 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def getproduct(db: Session = Depends(get_db)):
     product = db.query(Vehiculos).all()
     return product
+
+@VH.get("/products/status")
+def getproduct(db: Session = Depends(get_db)):
+    product = db.query(status).all()
+    return {"resultado":product}
+
+@VH.get("/products/status/model")
+def getproduct(db: Session = Depends(get_db)):
+    product = db.query(Model_Auto).all()
+    return {"resultado":product}
+
+@VH.get("/products/status/category")
+def getproduct(db: Session = Depends(get_db)):
+    product = db.query(Category).all()
+    return {"resultado":product}
+
 
 
 @VH.post("/products")
@@ -72,6 +88,7 @@ def index(db: Session = Depends(get_db)):
             "id": vehiculo.id,
             "name_product": vehiculo.name_product,
             "category": categoria.name,
+            "price":vehiculo.price,
             "modelo": modelo.modelo,
         }
         for vehiculo, categoria, modelo in query
