@@ -2,12 +2,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os 
+from dotenv import load_dotenv
 
+load_dotenv()
 
-SQLALCHEMY_DATABASE_URL = "mysql+mysqlconnector://root:@localhost:3306/Vehiculos"
-
+DATABASE_URL = os.getenv("DATABASE_URL")
+#SQLALCHEMY_DATABASE_URL = "mysql+mysqlconnector://root:@localhost:3306/Vehiculos"
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL
+    DATABASE_URL
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

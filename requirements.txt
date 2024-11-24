@@ -8,3 +8,5 @@ pydantic
 python-multipart
 bcrypt
 alembic
+psycopg2-binary
+python-dotenv 
