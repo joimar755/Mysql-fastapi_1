@@ -1,5 +1,4 @@
 fastapi
-prisma
 SQLAlchemy
 mysql-connector-python
 passlib
